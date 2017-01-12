@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+ PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+	<settings>
+		 <setting name="jdbcTypeForNull" value="NULL"/>  
+		 <setting name="cacheEnabled" value="false"/>
+	</settings>
+	<typeAliases>
+		<typeAlias alias="ContractInteraction" 
+			type="com.ailk.eaap.op2.bo.ContractInteraction" />
+		<typeAlias alias="ContractInteractionDetail"
+			type="com.asiainfo.integration.o2p.log.query.bean.ContractInteractionDetail" />
+		<typeAlias alias="EndpointInteractionDetail" 
+			type="com.asiainfo.integration.o2p.log.query.bean.EndpointInteractionDetail" />
+		<typeAlias alias="EndpointInteraction"
+			type="com.ailk.eaap.op2.bo.EndpointInteraction"/>	
+	</typeAliases>
+
+    <mappers>
+       <mapper resource="mapper/contractInteraction-sqlmap.xml"/>
+       <mapper resource="mapper/endpointInteraction-sqlmap.xml"/>
+       <mapper resource="mapper/ctgLogs-sqlmap.xml"/>
+    </mappers>
+</configuration>

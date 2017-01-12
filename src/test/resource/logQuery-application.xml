@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 
+	xmlns="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
+       http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+       http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd
+       "
+	default-lazy-init="true">
+	
+	
+	<context:annotation-config />
+	<context:component-scan base-package="com.*" />
+	<context:property-placeholder location="classpath:logQuery.properties" />
+	
+	<!-- <bean class="com.ailk.eaap.o2p.common.spring.config.O2pPropertyPlaceholderConfigurer">
+		<property name="remoteOverride" value="true"></property>
+		<property name="cacheHolder" ref="cacheHolder"></property>
+	</bean>
+	
+	<bean id="cacheHolder" class="com.ailk.eaap.o2p.common.spring.config.ZKCfgCacheHolder">
+		<property name="ignoreResourceNotFound" value="true"></property>
+	</bean> -->
+	
+	<bean name="/queryDataService"
+		class="org.springframework.remoting.httpinvoker.HttpInvokerServiceExporter">
+			<property name="service" ref="serviceFactory"/>
+			<property name="serviceInterface"
+				value="com.asiainfo.integration.o2p.log.query.service.IQueryService" />
+	</bean>
+	
+	<bean id="serviceFactory" 
+		class="com.asiainfo.integration.o2p.log.query.service.impl.QueryServiceFactory">
+		<property name="factory">
+			<map>
+				<entry key="rmdb" value-ref="rmdblogQueryServie"/>
+				<entry key="nosql" value-ref="hbaselogQueryServie"/>
+			</map>
+		</property>	
+	</bean>
+	
+	<bean id="logdataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+		<property name="driverClass" value="${log.stormRMDB.jdbcDriver}"/>
+		<property name="jdbcUrl" value="${log.stormRMDB.url}"/>
+		<property name="user" value="${log.stormRMDB.user}"/>
+		<property name="password" value="${log.stormRMDB.password}"/>
+		<property name="maxPoolSize" value="${log.stormRMDB.maxIdle}"/>
+		<property name="minPoolSize" value="${log.stormRMDB.minIdle}"/>
+		<property name="initialPoolSize" value="${log.stormRMDB.initialSize}"/>
+		<property name="acquireRetryDelay" value="${log.stormRMDB.maxWait}"/>
+		<property name="breakAfterAcquireFailure" value="${log.stormRMDB.breakAfterAcquireFailure}"/>
+		<property name="testConnectionOnCheckout" value="${log.stormRMDB.testConnectionOnCheckout}"/>
+		<property name="testConnectionOnCheckin" value="${log.stormRMDB.testConnectionOnCheckin}"/>
+		<property name="idleConnectionTestPeriod" value="${log.stormRMDB.idleConnectionTestPeriod}"/>
+		<property name="acquireRetryAttempts" value="${log.stormRMDB.acquireRetryAttempts}"/>
+    </bean> 
+	    
+    <bean id="vendorProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+    	<property name="properties">
+      		<props>
+        		<prop key="Oracle">oracle</prop>
+        		<prop key="MySQL">mysql</prop>
+      		</props>
+    	</property>
+  	</bean>
+	
+  	<bean id="databaseIdProvider" class="org.apache.ibatis.mapping.VendorDatabaseIdProvider">
+    	<property name="properties" ref="vendorProperties"/>
+  	</bean>
+	    
+    <bean id="sessionFactory4LogQuery" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="configLocation" value="classpath:sqlMapConfig.xml"></property>
+        <property name="dataSource" ref="logdataSource"></property>
+        <property name="databaseIdProvider" ref="databaseIdProvider" />
+    </bean>
+	    
+	    <!-- <bean id="sqlSession"  class="org.mybatis.spring.SqlSessionTemplate"> 
+	     	<constructor-arg index="0" ref="sqlSessionFactory" /> 
+	 	</bean> -->
+		
+	<bean id="queryDaoImpl" class="com.asiainfo.integration.o2p.log.query.dao.impl.QueryDaoImpl">
+		<property name="sqlSessionFactory" ref="sessionFactory4LogQuery"></property>
+	</bean>
+		
+	<bean id="rmdblogQueryServie" class="com.asiainfo.integration.o2p.log.query.service.impl.QueryServiceImpl">
+		<property name="queryDao" ref="queryDaoImpl"></property>
+	</bean>
+	
+	
+	<bean id="hbaselogQueryServie" class="com.asiainfo.integration.o2p.log.query.service.impl.HbaseQueryServiceImpl">
+		<property name="hbaseQueryDao" ref="hbaseQueryDao"/>
+		<property name="solrQueryDao" ref="solrQueryDao"/>
+	</bean>
+	
+	<bean id="solrServer" class="com.asiainfo.integration.o2p.log.common.solr.SolrServer">
+		<property name="solrServerUrl" value="${log.hbase.solr.url}"></property>
+		<property name="soTimeout" value="${log.hbase.solr.soTimeout}"></property>
+		<property name="connectionTimeout" value="${log.hbase.solr.connectionTimeout}"></property>
+		<property name="defaultMaxConnectionsPerHost" value="${log.hbase.solr.maxConnectionPerHost}"></property>
+		<property name="maxTotalConnections" value="${log.hbase.solr.maxTotalConnections}"></property>
+		<property name="followRedirects" value="false"></property>
+		<property name="allowCompression" value="true"></property>
+		<property name="maxRetries" value="5"></property>
+	</bean>
+	
+	<bean id="solrQueryDao" class="com.asiainfo.integration.o2p.log.query.dao.impl.SolrQueryDaoImpl">
+		<property name="solrServer" ref="solrServer"/>
+	</bean>
+	
+	<bean id="configuration" class="org.springframework.data.hadoop.hbase.HbaseConfigurationFactoryBean">
+		<property name="zkPort" value="${HB.ZK.port}"></property>
+		<property name="zkQuorum" value="${HB.zkQuorum}"></property>
+	</bean>
+	
+	<bean id="hbaseQueryDao" class="com.asiainfo.integration.o2p.log.query.dao.impl.HbaseQueryDaoImpl" init-method="init">
+		<property name="hbaseConf" ref="configuration"/>
+	</bean>
+	
+
+</beans>

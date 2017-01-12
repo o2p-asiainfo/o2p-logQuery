@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" > 
+<mapper namespace="mapper.contractInteraction" >
+
+  	<cache-ref namespace="mapper.contractInteraction"/>
+	<cache   eviction="LRU"    flushInterval="60000"
+            size="512"
+     readOnly="true"/>
+  
+	
+
+	<!-- 可以配置多个结果映射信息描述 -->
+	<resultMap id="ContractInteractionResult" type="ContractInteraction">
+		<result property="contractInteractionId" column="CONTRACT_INTERACTION_ID" />
+		<result property="contractVersion" column="CONTRACT_VERSION" />
+		<result property="serviceLevel" column="SERVICE_LEVEL" />
+		<result property="srcTranId" column="SRC_TRAN_ID" />
+		<result property="srcSysCode" column="SRC_SYS_CODE" />
+		<result property="dstSysCode" column="DST_SYS_CODE" />
+		<result property="responseCode" column="RESPONSE_CODE" />
+		<result property="srcReqTime" column="SRC_REQ_TIME" />
+		<result property="createTime" column="CREATE_TIME" />
+	</resultMap>
+
+	
+
+	<resultMap id="ContractInteractionDetailResult" type="ContractInteractionDetail">
+		<result property="rowkeyValue" column="CONTRACT_INTERACTION_ID" />
+		<result property="contractInteractionId" column="CONTRACT_INTERACTION_ID" />
+		<result property="bizFuncCode" column="BIZ_FUNC_CODE" />
+		<result property="bizIntfCode" column="BIZ_INTF_CODE" />
+		<result property="contractVersion" column="CONTRACT_VERSION" />
+		<result property="regSerCode" column="REG_SER_CODE" />
+		<result property="regSerVersion" column="REG_SER_VERSION" />
+		<result property="srcTranId" column="SRC_TRAN_ID" />
+		<result property="dstTranId" column="DST_TRAN_ID" />
+		<result property="serviceLevel" column="SERVICE_LEVEL" />
+		<result property="srcOrgCode" column="SRC_ORG_CODE" />
+		<result property="dstOrgCode" column="DST_ORG_CODE" />
+		<result property="srcSysCode" column="SRC_SYS_CODE" />
+		<result property="dstSysCode" column="DST_SYS_CODE" />
+		<result property="testFlag" column="TEST_FLAG" />
+		<result property="srcReqTime" column="SRC_REQ_TIME" />
+		<result property="centerRecReqTime" column="CENTER_REC_REQ_TIME" />
+		<result property="centerFwd2DstTime" column="CENTER_FWD_2_DST_TIME" />
+		<result property="dstRecTime" column="DST_REC_TIME" />
+		<result property="dstReplyTime" column="DST_REPLY_TIME" />
+		<result property="centerRecDstTime" column="CENTER_REC_DST_TIME" />
+		<result property="centerFwd2SrcTime" column="CENTER_FWD_2_SRC_TIME" />
+		<result property="srcConfirmTime" column="SRC_CONFIRM_TIME" />
+		<result property="srcResponseTime" column="SRC_RESPONSE_TIME" />
+		<result property="responseType" column="RESPONSE_TYPE" />
+		<result property="responseCode" column="RESPONSE_CODE" />
+		<result property="createTime" column="CREATE_TIME" />
+		<result property="srcIp" column="SRC_IP"/>
+		<result property="inputFileNum" column="INPUT_FILE_NUM" />  
+		<result property="outputSuccessFileNum" column="OUT_SUCCESS_FILE_NUM"/>
+		<result property="ouputErrFileNum" column="OUT_ERR_FILE_NUM"/>
+
+	</resultMap>
+	
+	<resultMap id="ContractInteractionDetailResultOfException" type="ContractInteractionDetail">
+		<result property="exceptionSpecId" column="EXCEPTION_SPEC_ID" />
+		<result property="exceptionMessage" column="EXCEPTION_MESSAGE" />
+		<result property="content" column="CONTENT" />
+		<result property="staffNbr" column="STAFF_NBR" />
+	</resultMap>
+	<resultMap id="ContractInteractionDetailResultOfCTG" type="ContractInteractionDetail">
+		<result property="errCode" column="ERR_CODE" />
+		<result property="funName" column="FUN_NAME" />
+		<result property="errorMsg" column="ERROR_MSG" />
+		<result property="descriptor" column="DESCRIPTOR" />
+		<result property="status" column="STATUS" />
+	</resultMap>
+
+	<sql id="whereClause">
+		<where>
+			<if test="contractVersion !=null and contractVersion !=''">
+				 t.CONTRACT_VERSION = #{contractVersion} 
+            </if>
+			<if test="srcTranId !=null and srcTranId!=''">
+				and t.SRC_TRAN_ID = #{srcTranId} 
+            </if>
+			<if test="srcSysCode !=null and srcSysCode!=''">
+				and t.SRC_SYS_CODE = #{srcSysCode} 
+            </if>
+			<if test="dstSysCode !=null and dstSysCode!=''">
+				and t.DST_SYS_CODE = #{dstSysCode} 
+            </if>
+			<if test="responseCode != null and responseCode != ''">
+				and t.RESPONSE_CODE = #{responseCode} 
+            </if>
+            <if test="tenantId != null and tenantId != ''">
+				and t.tenant_Id = #{tenantId} 
+            </if>
+            
+            <if test="_databaseId=='mysql'">
+				<if test="startSrcReqTime !=null and startSrcReqTime !=''">
+	                and t.src_req_time >= #{startSrcReqTime} 
+				</if>
+				<if test="endSrcReqTime !=null and endSrcReqTime !=''"> 
+	                and t.src_req_time &lt;= #{endSrcReqTime} 
+				</if>
+            </if>
+            <if test="_databaseId=='oracle'">
+            	<if test="startSrcReqTime !=null and startSrcReqTime !=''">
+	                and t.src_req_time >= to_timestamp(#{startSrcReqTime},'yyyy-MM-dd hh24:mi:ss.ff')
+				</if>
+				<if test="endSrcReqTime !=null and endSrcReqTime !=''"> 
+	                and t.src_req_time &lt;= to_timestamp(#{endSrcReqTime},'yyyy-MM-dd hh24:mi:ss.ff')
+				</if>
+				<if test="endRow !=null and endRow !=''"> 
+	                AND ROWNUM &lt;= #{endRow}
+				</if>
+				
+				
+            </if>
+		</where> 
+	</sql>
+
+	<select id="queryContractInteraction" parameterType="java.util.HashMap"
+		resultMap="ContractInteractionResult">
+		<choose>
+			<when test="_databaseId=='mysql'">
+				select
+				t.CONTRACT_INTERACTION_ID,t.CONTRACT_VERSION,t.SERVICE_LEVEL,t.SRC_TRAN_ID,t.SRC_SYS_CODE,t.DST_SYS_CODE,t.RESPONSE_CODE,t.SRC_REQ_TIME
+				,t.CREATE_TIME
+				from contract_interaction${tabSuffix} t 
+				<include refid="whereClause"></include>
+				order by t.src_req_time desc
+				limit #{startRow},#{endRow}
+			</when>
+			<when test="_databaseId=='oracle'">
+				SELECT 
+		 	    CONTRACT_INTERACTION_ID,
+		 		CONTRACT_VERSION, SERVICE_LEVEL, SRC_TRAN_ID, SRC_SYS_CODE, DST_SYS_CODE, RESPONSE_CODE, SRC_REQ_TIME, CREATE_TIME
+		  		FROM (
+		  			Select ROWNUM AS ROWNO, T.* 
+		         	from contract_interaction${tabSuffix} T 
+		         	<include refid="whereClause"></include>
+		            ) TABLE_ALIAS 
+		         <if test="startRow != null and startRow != ''">
+					WHERE TABLE_ALIAS.ROWNO > #{startRow}
+		         </if>
+			</when>		
+		</choose>
+		
+	</select>
+
+	<select id="queryCount" parameterType="java.util.HashMap"
+		resultType="java.lang.Integer">
+		select count(t.CONTRACT_INTERACTION_ID) from
+		contract_interaction${tabSuffix} t 
+		<include refid="whereClause"></include>
+	</select>
+
+	<select id="queryContractInteractionDetail" parameterType="java.util.HashMap"
+		resultMap="ContractInteractionDetailResult">
+		SELECT
+		T.CONTRACT_INTERACTION_ID,
+		T.BIZ_FUNC_CODE,
+		T.BIZ_INTF_CODE,
+		T.CONTRACT_VERSION,
+		T.REG_SER_CODE,
+		T.REG_SER_VERSION,
+		T.SRC_TRAN_ID,
+		T.DST_TRAN_ID,
+		T.SERVICE_LEVEL,
+		T.SRC_ORG_CODE,
+		T.DST_ORG_CODE,
+		T.SRC_SYS_CODE,
+		T.DST_SYS_CODE,
+		T.TEST_FLAG,
+		T.SRC_REQ_TIME,
+		T.CENTER_REC_REQ_TIME,
+		T.CENTER_FWD_2_DST_TIME,
+		T.DST_REC_TIME,
+		T.DST_REPLY_TIME,
+		T.CENTER_REC_DST_TIME,
+		T.CENTER_FWD_2_SRC_TIME,
+		T.SRC_CONFIRM_TIME,
+		T.SRC_RESPONSE_TIME,
+		T.RESPONSE_TYPE,
+		T.RESPONSE_CODE,
+		T.RESPONSE_DES,
+		T.CREATE_TIME,
+		T.SRC_IP,
+		T.INPUT_FILE_NUM,
+		T.OUT_SUCCESS_FILE_NUM,
+		T.OUT_ERR_FILE_NUM
+		FROM contract_interaction${tabSuffix} T
+
+		WHERE
+		T.CONTRACT_INTERACTION_ID = #{contractInteractionId} and T.tenant_id=#{tenantId} 
+		<if test="_databaseId=='mysql'">
+			and T.CREATE_TIME = #{createTime}
+		</if>
+		<if test="_databaseId=='oracle'">
+			and T.CREATE_TIME = to_timestamp(#{createTime},'yyyy-MM-dd hh24:mi:ss.ff')
+		</if>
+
+	</select>
+	
+	<select id="queryContractInteractionDetailOfException" parameterType="java.util.HashMap"
+		resultMap="ContractInteractionDetailResultOfException">
+		select 
+		E.EXCEPTION_SPEC_ID,
+		E.EXCEPTION_MESSAGE,
+		E.CONTENT,
+		E.STAFF_NBR
+		from exception_logs${tabSuffix} E 
+		where E.CONTRACT_INTERACTION_ID=#{contractInteractionId} <!-- and E.tenant_id=#{tenantId}  -->
+		<if test="_databaseId=='mysql'">
+			and E.CREATE_TIME = #{createTime}
+		</if>
+		<if test="_databaseId=='oracle'">
+			and E.CREATE_TIME = to_timestamp(#{createTime},'yyyy-MM-dd hh24:mi:ss.ff')
+		</if>
+	</select>
+	
+	<select id="queryContractInteractionDetailOfCtg" parameterType="java.util.HashMap"
+		 resultMap="ContractInteractionDetailResultOfCTG">
+		select 
+		C.ERR_CODE,
+		C.FUN_NAME,
+		C.ERROR_MSG,
+		C.DESCRIPTOR,
+		C.STATUS
+		from ctg_logs${tabSuffix} C 
+		where C.CONTRACT_INTERACTION_ID=#{contractInteractionId} and C.tenant_id=#{tenantId} 
+		<if test="_databaseId=='mysql'"> 
+			and C.CREATE_DATE = #{createTime}
+		</if>
+		<if test="_databaseId=='oracle'">
+			and C.CREATE_DATE = to_timestamp(#{createTime},'yyyy-MM-dd hh24:mi:ss.ff')
+		</if>
+	</select>
+</mapper>
+
+

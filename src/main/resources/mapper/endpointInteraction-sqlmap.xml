@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" > 
+<mapper namespace="mapper.endpointInteraction" >
+
+  	<cache-ref namespace="mapper.endpointInteraction"/>
+	<cache   eviction="LRU"    flushInterval="60000"
+            size="512"
+     readOnly="true"/>
+  
+	<resultMap id="EndpointInteractionResult" type="EndpointInteraction">
+		<result property="contractInteractionId" column="CONTRACT_INTERACTION_ID" />
+		<result property="endpointInteractionId" column="ENDPOINT_INTERACTION_ID" />
+		<result property="serviceId" column="SERVICE_ID" />
+		<result property="endpointId" column="ENDPOINT_ID" />
+		<result property="reqOrRes" column="REQ_OR_RES" />
+		<result property="createDate" column="CREATE_DATE" />
+	</resultMap>
+	
+	
+	<resultMap id="EndpointInteractionDetailResult" type="EndpointInteractionDetail">
+		<result property="contractInteractionId" column="CONTRACT_INTERACTION_ID" />
+		<result property="endpointInteractionId" column="ENDPOINT_INTERACTION_ID" />
+		<result property="serviceId" column="SERVICE_ID" />
+		<result property="endpointId" column="ENDPOINT_ID" />
+		<result property="dstTranId" column="DST_TRAN_ID" />
+		<result property="srcTranId" column="SRC_TRAN_ID" />
+		<result property="dstSysCode" column="DST_SYS_CODE" />
+		<result property="createDate" column="CREATE_DATE" />
+		<result property="reqOrRes" column="REQ_OR_RES" />
+		<result property="resQueue" column="RES_QUEUE" />
+		<result property="reqQueue" column="REQ_QUEUE" />
+		<result property="queueMsgId" column="QUEUE_MSG_ID" />
+		<result property="dstOrgCode" column="DST_ORG_CODE" />
+		<result property="centerFwd2DstTime" column="CENTER_FWD_2_DST_TIME" />
+		<result property="dstReplyTime" column="DST_REPLY_TIME" />
+		<result property="descriptor" column="DESCRIPTOR" />
+		<result property="srcIp" column="SRC_IP" />
+		<result property="dstOrgCode" column="DST_ORG_CODE" />
+		<result property="endpointSpec" column="ENDPOINT_SPEC" />
+		<result property="failNum" column="FAIL_NUM" />
+		<result property="successNum" column="SUCCESS_NUM" />
+		
+		<result property="inMsg" column="in_msg" />
+		<result property="outMsg" column="out_msg" />
+	</resultMap>
+	
+	<resultMap id="EndpointInteractionDetailResultOfOri" type="EndpointInteractionDetail">
+		<result property="srcOrgCode" column="SRC_ORG_CODE" />
+		<result property="srcSysCode" column="SRC_SYS_CODE" />
+		<result property="msg" column="MSG" />
+		<result property="reqOrRes" column="REQ_OR_RES" />
+		<result property="failMsg" column="FAIL_MSG" />
+	</resultMap>
+
+	<sql id="whereClause">
+		<where>
+			<if test="tenantId !=null and tenantId != ''">
+				TENNAT_ID = #{tenantId} 
+            </if>
+			<if test="contractInteractionId !=null and contractInteractionId != ''">
+				CONTRACT_INTERACTION_ID = #{contractInteractionId} 
+            </if>
+			<if test="endpointInteractionId !=null and endpointInteractionId !=''">
+				and ENDPOINT_INTERACTION_ID = #{endpointInteractionId}
+            </if>
+			<if test="serviceId != null and serviceId != ''">
+				and SERVICE_ID = #{serviceId} 
+            </if>
+			<if test="endpointId != null and endpointId !=''">
+				and ENDPOINT_ID = #{endpointId} 
+            </if>
+			<if test="srcTranId != null and srcTranId != ''">
+				and SRC_TRAN_ID = #{srcTranId} 
+            </if>
+			<if test="dstTranId != null and dstTranId !=''">
+				and DST_TRAN_ID = #{dstTranId} 
+            </if>
+			<if test="dstSysCode != null and dstSysCode!= ''">
+				and DST_SYS_CODE = #{dstSysCode} 
+            </if>
+			<if test="_databaseId=='mysql'">
+				<if test="startCreateDate !=null and startCreateDate !=''">
+	                and CREATE_DATE >= #{startCreateDate}
+				</if>
+				<if test="endCreateDate != null and endCreateDate != ''"> 
+	                and CREATE_DATE &lt;= #{endCreateDate} 
+				</if>
+			</if>
+			<if test="_databaseId=='oracle'">
+				<if test="startCreateDate !=null and startCreateDate !=''">
+                	and CREATE_DATE >=to_timestamp(#{startCreateDate},'yyyy-MM-dd hh24:mi:ss.ff')
+				</if>
+				<if test="endCreateDate != null and endCreateDate != ''"> 
+	                and CREATE_DATE &lt;= to_timestamp(#{endCreateDate},'yyyy-MM-dd hh24:mi:ss.ff')
+				</if>
+				<if test="endRow != null and endRow != ''">
+					AND ROWNUM &lt;= #{endRow}
+				</if>
+			</if>
+			
+		</where>
+	</sql>
+
+	<select id="queryCount" parameterType="java.util.HashMap"
+		resultType="java.lang.Integer">
+		select count(ENDPOINT_INTERACTION_ID) from
+		endpoint_interaction${tabSuffix}
+		<include refid="whereClause"></include>
+	</select>
+	
+	<select id="queryEndpointInteraction" parameterType="java.util.HashMap"
+		resultMap="EndpointInteractionResult">
+		<choose>
+			<when test="_databaseId=='mysql'">
+				select CONTRACT_INTERACTION_ID,ENDPOINT_INTERACTION_ID,SERVICE_ID,ENDPOINT_ID,CREATE_DATE,REQ_OR_RES from
+				endpoint_interaction${tabSuffix}
+				<include refid="whereClause"></include>
+				limit #{startRow},#{endRow}
+			</when>
+			<when test="_databaseId=='oracle'">
+				select CONTRACT_INTERACTION_ID,ENDPOINT_INTERACTION_ID,SERVICE_ID,ENDPOINT_ID,CREATE_DATE,SRC_TRAN_ID,DST_TRAN_ID,DST_SYS_CODE 
+				FROM (
+		  			Select ROWNUM AS ROWNO, T.* 
+		         	from endpoint_interaction${tabSuffix} T 
+		    		<include refid="whereClause"></include>
+		            ) TABLE_ALIAS 
+		         <if test="startRow !=null and startRow != ''">
+					WHERE TABLE_ALIAS.ROWNO > #{startRow}
+		         </if>
+			</when>
+		</choose>
+	</select>
+	
+	<select id="queryEndpointInteractionDetail" parameterType="java.util.HashMap"
+		resultMap="EndpointInteractionDetailResult">
+	
+		select 
+		t.ENDPOINT_INTERACTION_ID,
+		t.CONTRACT_INTERACTION_ID,
+		t.SERVICE_ID,
+		t.ENDPOINT_ID,
+		t.CREATE_DATE,
+		t.SRC_TRAN_ID,
+		t.REQ_OR_RES,
+		t.QUEUE_MSG_ID,
+		t.RES_QUEUE,
+		t.REQ_QUEUE,
+		t.DST_TRAN_ID,
+		t.DST_ORG_CODE,
+		t.DST_SYS_CODE,
+		t.CENTER_FWD_2_DST_TIME,
+		t.DST_REPLY_TIME,
+		t.DESCRIPTOR,
+		t.SRC_IP,
+		t.ENDPOINT_SPEC,
+		t.FAIL_NUM,
+		t.SUCCESS_NUM,
+		t.IN_MSG,
+		t.OUT_MSG
+		from endpoint_interaction${tabSuffix} t
+		where t.endpoint_interaction_id = #{endpointInteractionId} <!-- and t.tenant_id=#{tenantId} -->
+	</select>
+	
+    <select id="queryEndpointInteractionDetailOfOri" parameterType="java.util.HashMap"
+		resultMap="EndpointInteractionDetailResultOfOri">
+		select 
+		o.SRC_ORG_CODE,
+		o.SRC_SYS_CODE,
+		o.MSG,
+		o.REQ_OR_RES,
+		o.FAIL_MSG
+		from ori_log_clob${tabSuffix} o
+		where 
+		<if test="_databaseId=='mysql'">
+			o.create_time=#{createTime}
+		</if>
+		<if test="_databaseId=='oracle'">
+			o.create_time=to_timestamp(#{createTime},'yyyy-MM-dd hh24:mi:ss.ff')
+		</if>
+		and o.endpoint_interaction_id=#{endpointInteractionId} and o.tenant_id=#{tenantId}
+	</select>
+</mapper>
+
+

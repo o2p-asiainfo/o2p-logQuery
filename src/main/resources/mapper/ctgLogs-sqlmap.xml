@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" > 
+<mapper namespace="mapper.ctgLogs" >
+
+  	<cache-ref namespace="mapper.ctgLogs"/>
+	<cache   eviction="LRU"    flushInterval="60000"
+            size="512"
+     readOnly="true"/>
+  
+  	<resultMap type="java.util.HashMap" id="queryResult">  
+	    <result column="contract_interaction_id" property="contractionInteractionId" />  
+	    <result column="create_date" property="createDate" />  
+	    <result column="error_msg" property="errMsg" />
+	    <result column="err_code" property="errCode" />
+	    <result column="fun_name" property="funName" />
+	    <result column="logs_seq" property="logSeq" javaType="String" jdbcType="INTEGER"/>
+	    <result column="src_sys_sign" property="srcSysSign" />
+	    <result column="descriptor" property="descriptor" />
+	    <result column="status" property="status" />
+	</resultMap>
+	
+	<sql id="whereClause">
+		<where>
+			<if test="contractInteractionId != null and contractInteractionId !=''">
+				t.contract_interaction_id=#{contractInteractionId} 
+	        </if>
+			<if test="logSeq != null and logSeq !=''">
+				and t.logs_seq like '%${logSeq}%'
+            </if>
+			<if test="funName != null and funName != ''">
+				and t.fun_name  like '%${funName}%'
+		    </if>
+            <if test="errCode != null and errCode != ''">
+				and t.err_code like '%${errCode}%'
+            </if>
+            <if test="tenantId != null and tenantId != ''">
+				and t.tenant_Id = #{tenantId} 
+            </if>
+            <if test="_databaseId=='mysql'">
+	            <if test="startCreateDate != null and startCreateDate != ''">
+                      and  t.create_date >= #{startCreateDate} 
+				</if>
+				<if test="endCreateDate != null and endCreateDate != ''"> 
+                      and t.create_date &lt;= #{endCreateDate} 
+				</if>
+            </if>
+            <if test="_databaseId=='oracle'">
+	            <if test="startCreateDate != null and startCreateDate != ''">
+                    and  t.create_date >= to_timestamp(#{startCreateDate},'yyyy-MM-dd hh24:mi:ss.ff')
+				</if>
+				<if test="endCreateDate != null and endCreateDate != ''"> 
+                    and  t.create_date &lt;= to_timestamp(#{endCreateDate},'yyyy-MM-dd hh24:mi:ss.ff')
+				</if>
+				<if test="endRow != null and endRow != ''">
+			 		AND ROWNUM &lt;= #{endRow}
+			 	</if>
+           </if>
+			
+		</where>
+	</sql>
+	
+	
+	<select id="queryCount" parameterType="java.util.HashMap"
+		resultType="java.lang.Integer">
+		select count(t.CONTRACT_INTERACTION_ID) from
+		ctg_logs${tabSuffix} t
+		<include refid="whereClause"></include>
+			
+	</select>
+	
+	<select id="queryCtgLogs" parameterType="java.util.HashMap"
+		resultMap="queryResult">
+		<choose>
+			<when test="_databaseId=='mysql'">
+				select t.contract_interaction_id, t.create_date,
+				t.error_msg, t.err_code, t.fun_name, t.logs_seq, t.src_sys_sign, t.descriptor, t.status 
+				from ctg_logs${tabSuffix} t
+				<include refid="whereClause"></include>
+				order by t.create_date desc
+				limit #{startRow},#{endRow}
+			</when>
+			
+			<when test="_databaseId=='oracle'">
+			 SELECT 
+		        contract_interaction_id, create_date, error_msg, err_code, fun_name, logs_seq,  src_sys_sign,  descriptor, status
+		    FROM (
+		        Select ROWNUM AS ROWNO, t.contract_interaction_id, t.create_date,
+			   t.error_msg, t.err_code, t.fun_name, t.logs_seq, t.src_sys_sign, t.descriptor, t.status  
+               from ctg_logs${tabSuffix} T 
+              <include refid="whereClause"></include>
+			 
+			 ) TABLE_ALIAS
+			 <if test="startRow != null and startRow != ''">
+                 WHERE TABLE_ALIAS.ROWNO> #{startRow}
+			</if>
+			</when>
+		</choose>
+	</select>
+	
+	
+</mapper>
+
+
